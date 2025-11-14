@@ -31,6 +31,9 @@ namespace Learning.Prototype {
             { Weapons.RocketLauncher, 0 }
         };
 
+        #region InputManagement
+        #endregion
+
         public CameraControl cameraControl;
         public Player player;
         public Enemy enemyPrefab;

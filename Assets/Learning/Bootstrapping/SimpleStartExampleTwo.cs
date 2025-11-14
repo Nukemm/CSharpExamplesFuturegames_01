@@ -22,6 +22,8 @@ public class SimpleStartExampleTwo : MonoBehaviour, IService {
     public void Initialize() {
         ServiceLocator.Instance.RegisterService(monoServiceOne);
         ServiceLocator.Instance.RegisterService(monoServiceTwo);
+
+        SimpleStartExampleTwo myStartInstance = ServiceLocator.Instance.GetService<SimpleStartExampleTwo>();
     }
     public void Dispose() {
         ServiceLocator.Instance.RemoveService<MonoServiceOne>();
