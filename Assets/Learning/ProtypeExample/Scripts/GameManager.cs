@@ -18,13 +18,12 @@ namespace Learning.Prototype {
         public static bool godMode = false;
         public static int score = 0;
         public static int highScore = 0;
-        public static float masterVolume = 1f;
         public static float mouseSensitivity = 2f;
-        internal static Weapons currentWeapon = Weapons.Pistol;
+        private static Weapons currentWeapon = Weapons.Pistol;
 
         public static GameManager Instance;
 
-        internal static readonly Dictionary<Weapons, int> ammoDict = new() {
+        private static readonly Dictionary<Weapons, int> ammoDict = new() {
             { Weapons.None, 0 },
             { Weapons.Pistol, 99 },
             { Weapons.Rifle, 0 },
@@ -32,61 +31,8 @@ namespace Learning.Prototype {
         };
 
         #region InputManagement
-        #endregion
+        private void InputManager() {
 
-        public CameraControl cameraControl;
-        public Player player;
-        public Enemy enemyPrefab;
-        public GameObject bulletPrefab;
-
-        public GameObject explosionPrefab;
-
-        // public AudioClip jumpSound;
-        // public AudioClip shootSound;
-        // public AudioClip dieSound;
-        public AudioSource musicSource;
-        public TextMeshProUGUI scoreText;
-        public TextMeshProUGUI livesText;
-        public TextMeshProUGUI weaponText;
-        public TextMeshProUGUI ammoText;
-        public TextMeshProUGUI highScoreText;
-        public Slider volumeSlider;
-        public GameObject pausePanel;
-        public GameObject gameOverPanel;
-        public GameObject victoryPanel;
-        public Transform[] spawnPoints;
-        public List<Enemy> enemies; //DO NOT ASSIGN THIS IN INSPECTOR, USED FOR TRACKING ENEMIES
-
-        private static int lives = 3;
-        private static int level = 1;
-        private float nextSpawn = 0;
-        private Queue<Bullet> activeBullets;
-        private PlayerInfo playerRecord;
-
-        public static float PlayerHealth {
-            get => GameData.playerHealth;
-            set => GameData.playerHealth = (int)value;
-        }
-
-        private void Awake() {
-            if(Instance != null && Instance != this) {
-                Destroy(gameObject);
-                return;
-            }
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-            highScore = PlayerPrefs.GetInt("HighScore", 0);
-            lives = GameData.playerLives;
-            level = GameData.currentLevel;
-            playerRecord = new PlayerInfo("Player", level, GameData.playerHealth, highScore);
-            Debug.Log("Starting Player Info: " + playerRecord);
-        }
-
-        private void Start() {
-            RefreshUI();
-        }
-
-        private void Update() {
             if(Input.GetKeyDown(KeyCode.Escape)) {
                 if(GameData.gameIsPaused) {
                     UnPause();
@@ -118,6 +64,12 @@ namespace Learning.Prototype {
                 //Debug.Log("FPS: " + (1f / Time.deltaTime).ToString("F1"));
             }
 
+            Debug.Log(
+    $"player={player},  player.transform={player?.transform},  " +
+    $"enemies={enemies},  spawnPoints={spawnPoints},  " +
+    $"enemyPrefab={enemyPrefab},  enemy={enemy},  " +
+    $"scoreText={scoreText},  livesText={livesText},  weaponText={weaponText},  ammoText={ammoText},  highScoreText={highScoreText}");
+
             if(!GameData.gameIsOver && !GameData.gameIsPaused && Time.time > nextSpawn && enemies.Count < GameData.numMaxEnemies) {
                 nextSpawn = Time.time + Random.Range(1f, 3f);
                 int r = Random.Range(0, spawnPoints.Length);
@@ -127,16 +79,65 @@ namespace Learning.Prototype {
                 enemy.transform.LookAt(player.transform);
                 StartMovingTowardsPlayer(enemy);
             }
+        }
+        #endregion
 
-            if(!GameData.gameIsPaused && !GameData.playerIsDead) {
-                float mx = Input.GetAxis("Mouse X") * mouseSensitivity;
-                float my = Input.GetAxis("Mouse Y") * mouseSensitivity;
+        public CameraControl cameraControl;
+        public Player player;
+        public Enemy enemyPrefab;
+        public GameObject bulletPrefab;
+
+        public TextMeshProUGUI scoreText;
+        public TextMeshProUGUI livesText;
+        public TextMeshProUGUI weaponText;
+        public TextMeshProUGUI ammoText;
+        public TextMeshProUGUI highScoreText;
+        public Transform[] spawnPoints;
+        private List<Enemy> enemies; //DO NOT ASSIGN THIS IN INSPECTOR, USED FOR TRACKING ENEMIES
+
+        private static int lives = 3;
+        private static int level = 1;
+        private float nextSpawn = 0;
+        private Queue<Bullet> activeBullets;
+        private PlayerInfo playerRecord;
+        private object enemy;
+
+        public static float PlayerHealth {
+            get => GameData.playerHealth;
+            set => GameData.playerHealth = (int)value;
+        }
+
+
+        private void Awake() {
+
+            enemies = new List<Enemy>();
+
+
+            if(Instance != null && Instance != this) {
+                Destroy(gameObject);
+                return;
             }
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+            highScore = PlayerPrefs.GetInt("HighScore", 0);
+            lives = GameData.playerLives;
+            level = GameData.currentLevel;
+            playerRecord = new PlayerInfo("Player", level, GameData.playerHealth, highScore);
+            Debug.Log("Starting Player Info: " + playerRecord);
+        }
+
+        private void Start() {
+            RefreshUI();
+        }
+
+        private void Update() {
+            InputManager();
 
             if(score >= 5000 && !GameData.gameIsOver) {
                 Victory();
             }
         }
+
         private void StartMovingTowardsPlayer(Enemy enemy) {
             enemy.StartMovingTowards(player.transform);
         }
@@ -152,16 +153,12 @@ namespace Learning.Prototype {
         public void Pause() {
             GameData.gameIsPaused = true;
             Time.timeScale = 0f;
-            pausePanel?.SetActive(true);
-            musicSource.Pause();
             Cursor.lockState = CursorLockMode.None;
         }
 
         public void UnPause() {
             GameData.gameIsPaused = false;
             Time.timeScale = 1f;
-            pausePanel.SetActive(false);
-            musicSource.UnPause();
             Cursor.lockState = CursorLockMode.Locked;
         }
 
@@ -251,13 +248,11 @@ namespace Learning.Prototype {
         private void GameOver() {
             GameData.gameIsOver = true;
             Time.timeScale = 0f;
-            gameOverPanel.SetActive(true);
             Cursor.lockState = CursorLockMode.None;
         }
 
         private void Victory() {
             GameData.gameIsOver = true;
-            victoryPanel.SetActive(true);
             Time.timeScale = 0f;
             Cursor.lockState = CursorLockMode.None;
         }
@@ -266,11 +261,6 @@ namespace Learning.Prototype {
             level++;
             UnityEngine.SceneManagement.SceneManager.LoadScene("Level2" + level);
             // forgot to reset half the state…
-        }
-
-        public void OnVolumeChanged(float v) {
-            masterVolume = v;
-            musicSource.volume = v;
         }
 
         public void QuitGame() {
